@@ -1,0 +1,154 @@
+{% include 'header.html' %}
+{% include 'about.html' %}
+
+<!--  User Account Access  -->
+{% include 'sign_in.html' %}
+{% include 'sign_up.html' %}
+
+<!--  Welcome  -->
+<div class="container my-5">
+    <div class="p-5 text-center bg-body-tertiary rounded-3 shadow-lg">
+        {% if current_user.is_authenticated %}
+        <h1 class="text-body-emphasis">Welcome {{ current_user.first }}!</h1>
+        <p class="lead">
+            <code>Your To-Dos are waiting 🗒️</code>
+        </p>
+        {% else %}
+        <h1 class="text-body-emphasis">Sign up to start your To-Dos!</h1>
+        <p class="lead">
+            <code>If you already have an account, please sign in.</code>
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<!--  Flashes -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="container justify">
+    <div class="alert alert-{{ category }} alert-dismissible fade show mx-5 px-2 my-5" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!--  TO DO list -->
+<div class="container header-wave rounded shadow-lg mb-5">
+    <div class="row justify-content-center align-items-start py-5">
+
+        <!-- To Do Form -->
+        <div class="col-8 col-lg-3 mb-2 me-2">
+            <div class="rounded-3 p-4" style="background-color: #e2d9ec;">
+                {% if current_user.is_authenticated %}
+                <form class="row g-2" method="POST" action="{{ url_for('add_todo') }}">
+                    {{ todo_form.hidden_tag() }}
+                    {% else %}
+                    <form class="row g-2 disabled-form">
+                        {% endif %}
+                        <div class="col-12">
+                            <label for="inputEmail" class="form-label">Title</label>
+                            {{ todo_form.title(class="form-control", id="inputEmail4") }}
+                        </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Description</label>
+                            {{ todo_form.description(class="form-control", id="inputDescription") }}
+                        </div>
+                        <div class="col-12">
+                            <label for="due_date">Due Date:</label>
+                            {{ todo_form.date(id="due_date", class="form-control", min=today.strftime('%Y-%m-%d')) }}
+                        </div>
+                        <div class="col-12">
+                            <label for="due_time">Due Time:</label>
+                            {{ todo_form.time(id="due_time", class="form-control", type="time") }}
+                        </div>
+                        <div class="col-12 py-2 d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary px-4">Add To Do</button>
+                        </div>
+                    </form>
+            </div>
+        </div>
+
+        <!-- To Do's -->
+        <div class="col-md-8 mb-2">
+            <div class="list-group">
+
+                <!-- List Items -->
+                {% if current_user.is_authenticated %}
+                {% set current_date = namespace(value='') %}
+                {% for todo in todos %}
+
+                {% set todo_day_str = todo.date.strftime('%Y-%m-%d') %}
+                {% if current_date.value != todo_day_str %}
+
+                {% if not loop.first %}
+                </div>
+                {% endif %}
+
+                <div style="background-color: #5e3370; color: white;" class=" px-3 py-2 rounded-3 mb-3">
+                    <h5 class="text-white m-0">{{ todo.date.strftime('%A, %B %d, %Y') }}</h5>
+                </div>
+                <div class="list-group mb-3">
+                {% set current_date.value = todo_day_str %}
+                {% endif %}
+
+                <label class="list-group-item d-flex gap-3 align-items-center justify-content-between
+                {% if todo.completed %}bg-light text-decoration-line-through opacity-75{% endif %}">
+
+
+                    <div class="d-flex gap-3 align-items-start flex-grow-1">
+
+                        <!--  Check box  -->
+                        <form action="{{ url_for('toggle_completed', todo_id=todo.id) }}" method="post" style="display:inline;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="completed" onchange="this.form.submit()" {% if
+                                   todo.completed %}checked{% endif %} style="font-size: 1.375em;">
+                        </form>
+
+                        <div class="d-flex flex-column">
+                            <div class="d-flex align-items-center flex-wrap my-1">
+                                <strong>{{ todo.title }} :</strong>
+                                <span class="mt-1 ms-4 text-muted">{{ todo.description }}</span>
+                            </div>
+
+                            <small class="mt-1" style="color: #3b82f6;">
+                                <svg class="bi me-1" width="1em" height="1em" role="img" aria-label="Schedule">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                </svg>
+                                {{ todo.date.strftime('%m-%d-%Y') }} at {{ todo.time.strftime('%I:%M %p') }}
+                            </small>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('delete', todo_id=todo.id) }}" class="btn btn-sm btn-outline-danger" title="Delete ToDo">
+                        <i class="bi bi-trash-fill"></i>
+                    </a>
+                </label>
+
+                {% if loop.last %}
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                {% if not todos %}
+                <label class="list-group-item d-flex gap-3 bg-body-tertiary">
+                    <input class="form-check-input form-check-input-placeholder bg-body-tertiary flex-shrink-0 pe-none"
+                           disabled="" type="checkbox" value="" style="font-size: 1.375em;">
+                    <span class="pt-1 form-checked-content">
+                        <span contenteditable="true" class="w-100">Add new To Do...</span>
+                        <small class="d-block text-body-secondary">
+                            <svg class="bi me-1" width="1em" height="1em" aria-hidden="true"><i class="bi bi-calendar-event"></i></svg>
+                            Date and time...
+                        </small>
+                    </span>
+                </label>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+
+{% include 'footer.html' %}
